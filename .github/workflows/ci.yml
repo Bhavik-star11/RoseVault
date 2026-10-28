@@ -15,6 +15,8 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Install pinned Android platform
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Build offline and check native code
@@ -30,7 +32,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - name: Start local Supabase and apply migrations
-        run: npx --no-install supabase start
+        run: npx --no-install supabase start > "$RUNNER_TEMP/supabase-start.log" 2>&1
       - name: Test database and storage policies locally
         run: npm run test:rls
       - name: Stop local backend
