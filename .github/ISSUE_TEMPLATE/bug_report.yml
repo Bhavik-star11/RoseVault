@@ -1,0 +1,19 @@
+name: Bug report
+description: Report a reproducible RoseVault problem
+body:
+  - type: markdown
+    attributes:
+      value: Do not include passwords, SMS codes, tokens, private chats, phone numbers, or signing keys. Report security vulnerabilities privately as described in SECURITY.md.
+  - type: textarea
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Android version and RoseVault version

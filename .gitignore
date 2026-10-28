@@ -1,0 +1,29 @@
+local.properties
+.gradle/
+.kotlin/
+**/build/
+app/google-services.json
+*.jks
+*.keystore
+functions/node_modules/
+.env*
+
+**/node_modules/
+
+# Local backend configuration and private artifacts
+supabase.properties
+supabase/.temp/
+supabase/.branches/
+*.apk
+*.aab
+*.hprof
+.DS_Store
+
+.tmp/
+
+*.log
+
+
+# Explicitly exclude exported test sessions and local fixture material
+*fixture-private*
+*transport-fixture*

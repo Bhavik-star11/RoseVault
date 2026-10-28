@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createHmac} from 'node:crypto';
+import {mint,handle} from '../supabase/functions/turn-credentials/handler.mjs';
+const settings={SUPABASE_URL:'https://fixture.supabase.co',SUPABASE_ANON_KEY:'test-public-key',TURN_SHARED_SECRET:'synthetic-test-secret',TURN_URLS:'turns:relay.example.test:5349'};
+const env=name=>settings[name];
+const request=(authorization='Bearer synthetic-test-token')=>new Request('https://fixture.example.test/call',{method:'POST',headers:{authorization}});
+const user={id:'fixture-user',phone:'12025550101',phone_confirmed_at:'2026-01-01T00:00:00Z'};
+const response=(status,data)=>new Response(JSON.stringify(data),{status});
+test('relay credentials are scoped to the verified user and expire in ten minutes',async()=>{
+ const result=await mint('synthetic-test-secret',['turns:relay.example.test:5349'],'fixture-user',1000);
+ assert.equal(result.username,'1600:fixture-user');assert.equal(result.expiresAt,1600);
+ assert.equal(result.credential,createHmac('sha1','synthetic-test-secret').update(result.username).digest('base64'));
+});
+test('invalid relay configuration is rejected',async()=>{await assert.rejects(()=>mint('',[],user.id));await assert.rejects(()=>mint('secret',['https://not-a-relay'],user.id));});
+test('unsigned requests never reach the backend',async()=>{let touched=false;const r=await handle(request(''),{env,fetcher:async()=>{touched=true;throw Error();}});assert.equal(r.status,401);assert.equal(touched,false);});
+test('rejected sessions cannot request credentials',async()=>{assert.equal((await handle(request(),{env,fetcher:async()=>response(401,{})})).status,401);});
+test('unverified phone accounts cannot request credentials',async()=>{assert.equal((await handle(request(),{env,fetcher:async()=>response(200,{id:user.id})})).status,403);});
+test('missing relay settings produce honest setup feedback',async()=>{const r=await handle(request(),{env:name=>name==='TURN_SHARED_SECRET'?undefined:env(name),fetcher:async()=>response(200,user)});assert.equal(r.status,503);assert.match((await r.json()).message,/not configured/);});
+test('server-side issuance limits are enforced',async()=>{let count=0;const r=await handle(request(),{env,fetcher:async()=>++count===1?response(200,user):response(400,{})});assert.equal(r.status,429);});
+test('successful issuance uses the authenticated identity and hides the shared secret',async()=>{let count=0;const r=await handle(request(),{env,fetcher:async()=>++count===1?response(200,user):response(200,{allowed:true})});assert.equal(r.status,200);const body=await r.text();assert(!body.includes(settings.TURN_SHARED_SECRET));assert.match(JSON.parse(body).username,/:fixture-user$/);});

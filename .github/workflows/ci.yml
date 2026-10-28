@@ -1,0 +1,38 @@
+name: Verify RoseVault
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install pinned Android platform
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Build offline and check native code
+        run: ./gradlew -PenableCloud=false :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Start local Supabase and apply migrations
+        run: npx --no-install supabase start
+      - name: Test database and storage policies locally
+        run: npm run test:rls
+      - name: Stop local backend
+        if: always()
+        run: npx --no-install supabase stop --no-backup

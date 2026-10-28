@@ -1,0 +1,4 @@
+# Copy to supabase.properties (ignored by Git). These are client-safe settings.
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_REPLACE_WITH_YOUR_PUBLISHABLE_KEY
+# Never use a secret/service_role key in Android configuration.

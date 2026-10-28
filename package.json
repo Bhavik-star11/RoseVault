@@ -1,0 +1,15 @@
+{
+ "name":"rosevault",
+ "version":"1.5.0",
+ "private":true,
+ "license":"MIT",
+ "type":"module",
+ "engines":{"node":">=22"},
+ "scripts":{
+  "test":"node --test tests/turn.test.mjs",
+  "test:rls":"node scripts/test-rls.mjs",
+  "backend:start":"supabase start",
+  "backend:stop":"supabase stop"
+ },
+ "devDependencies":{"supabase":"2.122.0"}
+}
