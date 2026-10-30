@@ -69,6 +69,7 @@ class MatrixVault(
         val typing: List<String> = emptyList(),
         val verificationReady: Boolean = false,
         val verificationPhase: VerificationPhase = VerificationPhase.IDLE,
+        val operation: String = "Matrix action",
     )
 
     private val mutable = MutableStateFlow(State())
@@ -166,23 +167,38 @@ class MatrixVault(
     fun run(action: suspend () -> Unit) {
         val epoch = generation
         scope.launch {
-            update { it.copy(busy = true, error = null) }
+            update { it.copy(busy = true, error = null, operation = "Matrix action") }
             try {
                 action()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 if (epoch == generation)
-                    update {
-                        it.copy(
-                            error =
-                                "Matrix operation failed. Check your server, connection, account, or device verification. Your queued messages remain in the SDK store."
-                        )
-                    }
+                    update { it.copy(error = failureMessage(e, mutable.value.operation)) }
             } finally {
                 if (epoch == generation) update { it.copy(busy = false) }
             }
         }
+    }
+
+    private fun failureMessage(error: Exception, operation: String): String {
+        if (error is ClientException.MatrixApi) {
+            return when (error.code) {
+                "M_FORBIDDEN" ->
+                    if (operation == "Sign-in")
+                        "Sign-in rejected. Check the complete Matrix ID and matching password. [MX-AUTH]"
+                    else "The server refused this action. [MX-FORBIDDEN]"
+                "M_LIMIT_EXCEEDED" ->
+                    "Too many attempts. Wait a little before trying again. [MX-RATE]"
+                "M_UNKNOWN_TOKEN",
+                "M_MISSING_TOKEN" ->
+                    "The saved session is no longer accepted by the server. Keep your recovery key; do not clear app data. [MX-SESSION]"
+                else ->
+                    "$operation failed. Server response: ${error.code.takeIf { it.matches(Regex("M_[A-Z_]{1,60}")) } ?: "unrecognized"}."
+            }
+        }
+        val type = error.javaClass.simpleName.filter { it.isLetterOrDigit() }.take(40)
+        return "$operation failed [$type]. Tap Check server connection to test phone-to-server access. Queued messages stay in the SDK store."
     }
 
     @Synchronized
@@ -266,11 +282,14 @@ class MatrixVault(
                     .put("store", java.util.UUID.randomUUID().toString())
                     .put("storeKey", key)
             metadata = j
+            update { it.copy(operation = "Matrix client setup") }
             val c = build(j, origin)
             try {
+                update { it.copy(operation = "Sign-in") }
                 c.login(user, password, "RoseVault Android", null)
                 saveSession(c.session())
                 client = c
+                update { it.copy(operation = "Encrypted sync setup") }
                 activate(c)
             } catch (e: Exception) {
                 client = null

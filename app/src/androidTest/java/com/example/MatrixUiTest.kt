@@ -38,6 +38,26 @@ class MatrixUiTest {
             assertTrue(device.wait(Until.hasObject(By.text(serverLabel)), 10000))
             assertTrue(device.hasObject(By.text("Matrix ID")))
             assertFalse(device.hasObject(By.text("Send verification code")))
+            repeat(6) {
+                if (
+                    (device.findObject(By.text("Sign in to homeserver"))?.visibleBounds?.height()
+                        ?: 0) < 60
+                ) {
+                    device.swipe(
+                        device.displayWidth / 2,
+                        device.displayHeight * 3 / 4,
+                        device.displayWidth / 2,
+                        device.displayHeight / 4,
+                        30,
+                    )
+                    device.waitForIdle()
+                }
+            }
+            assertTrue(
+                "Sign-in button must remain reachable after scrolling",
+                (device.findObject(By.text("Sign in to homeserver"))?.visibleBounds?.height()
+                    ?: 0) >= 60,
+            )
             scenario.onActivity { it.lock() }
             assertTrue(device.wait(Until.hasObject(By.text("System Security Vault")), 10000))
             assertFalse(device.hasObject(By.text(serverLabel)))

@@ -58,6 +58,8 @@ Its launcher name is **RoseVault Local** and its package ends in `.local`. It in
 
 On phone A, unlock RoseVault Local → Matrix. Enter `http://YOUR_WIFI_IP:8008`, Alice's full Matrix ID, and her test password. On phone B use the same server and Bob's credentials. A phone's `localhost` means that phone, not the computer. The standard emulator may use the computer's private IP too; `10.0.2.2` works only when the host listener is bound to a reachable host-gateway interface.
 
+If sign-in fails, tap **Check server connection** in the updated app. A successful check confirms phone-to-server access without sending a password. Enter the complete Matrix ID with `@` at the beginning; the app removes surrounding whitespace. Report the displayed failure stage/code rather than sending passwords or full SDK logs. The form scrolls on smaller screens and with larger text.
+
 ## 6. Exercise the encrypted flow
 
 1. Alice enters Bob's full ID and starts an encrypted conversation. Bob reviews and accepts the invitation.

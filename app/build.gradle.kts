@@ -19,8 +19,8 @@ android {
   applicationId = "com.aistudio.rosevault.kxpqzm"
   minSdk = 31
   targetSdk = 36
-  versionCode = 8
-  versionName = "2.0.0-alpha.1"
+  versionCode = 9
+  versionName = "2.0.0-alpha.2"
   buildConfigField("boolean", "CLOUD_ENABLED", enableCloud.toString())
   buildConfigField("boolean", "LOCAL_MATRIX_DEV", "false")
   buildConfigField("String", "SUPABASE_URL", quoted(if (enableCloud) supabaseUrl else ""))

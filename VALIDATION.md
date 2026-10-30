@@ -1,5 +1,9 @@
 # Validation — Matrix pilot 2.0.0-alpha.1
 
+## Phone sign-in diagnostics follow-up
+
+The local diagnostic update (version code 9) adds a scrollable, shorter sign-in form, explicit Matrix-ID validation/whitespace normalization, a bounded unauthenticated connection check, and stage-specific errors without raw exception contents or credentials. All 23 JVM cases and local lint pass. Three device checks pass at a reduced 900×1500 emulator viewport with font scale 1.4: successful local connection probing, rejection of public HTTP, and sign-in button reachability/app-lock gating. Physical-phone sign-in failure is still being diagnosed; these checks do not claim that the reported phone issue is resolved.
+
 ## Local development follow-up — 30 October 2026
 
 - Added a separate `local` app/package with a visible HTTP warning. Ordinary builds require HTTPS; local HTTP permits only literal RFC1918/loopback IPv4 origins. All 23 JVM cases pass, including local-origin rejection tests. The local APK/instrumentation builds and lint pass.

@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.BuildConfig
 import com.example.MainActivity
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun MatrixScreen(activity: MainActivity, close: () -> Unit) {
@@ -33,6 +34,11 @@ fun MatrixScreen(activity: MainActivity, close: () -> Unit) {
     var selected by remember { mutableStateOf<com.example.matrix.MatrixVault.MessageRow?>(null) }
     var receipts by remember { mutableStateOf(false) }
     var typing by remember { mutableStateOf(false) }
+    var connectionResult by remember { mutableStateOf("") }
+    var checkingConnection by remember { mutableStateOf(false) }
+    var inputError by remember { mutableStateOf("") }
+    val loginScroll = androidx.compose.foundation.rememberScrollState()
+    val uiScope = rememberCoroutineScope()
     LaunchedEffect(Unit) { if (matrix.hasSession) matrix.run { matrix.restore() } }
     LaunchedEffect(draft, typing) {
         if (state.active != null && typing) {
@@ -52,7 +58,11 @@ fun MatrixScreen(activity: MainActivity, close: () -> Unit) {
     ) {
         Surface(Modifier.fillMaxSize()) {
             Column(
-                Modifier.safeDrawingPadding().padding(16.dp),
+                Modifier.safeDrawingPadding()
+                    .padding(16.dp)
+                    .then(
+                        if (state.user.isEmpty()) Modifier.verticalScroll(loginScroll) else Modifier
+                    ),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -66,16 +76,12 @@ fun MatrixScreen(activity: MainActivity, close: () -> Unit) {
                 if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (BuildConfig.LOCAL_MATRIX_DEV)
                     Text(
-                        "LOCAL TEST BUILD · Use disposable accounts only. HTTP exposes sign-in and network traffic on this Wi-Fi. Keep this server on a trusted local network.",
+                        "LOCAL TEST · Use test accounts on trusted Wi-Fi. HTTP does not protect sign-in.",
                         color = MaterialTheme.colorScheme.error,
                     )
                 if (state.user.isEmpty()) {
-                    Text(
-                        "Use an account on your own Matrix homeserver. No Twilio or SMS is required. The server operator creates accounts while public registration is disabled."
-                    )
-                    Text(
-                        "Your existing local vault and Nearby chats remain on this phone. Matrix does not automatically import old Supabase conversations."
-                    )
+                    Text("Sign in with your Matrix ID and account password.")
+                    Text("Your local chats remain separate on this phone.")
                     if (matrix.hasSession) {
                         TextButton(
                             onClick = { matrix.run { matrix.restore() } },
@@ -104,6 +110,24 @@ fun MatrixScreen(activity: MainActivity, close: () -> Unit) {
                             placeholder = { Text("@name:example.org") },
                             singleLine = true,
                         )
+                        TextButton(
+                            onClick = {
+                                checkingConnection = true
+                                connectionResult = "Checking connection…"
+                                uiScope.launch {
+                                    try {
+                                        connectionResult =
+                                            com.example.matrix.MatrixConnectionCheck.check(server)
+                                    } finally {
+                                        checkingConnection = false
+                                    }
+                                }
+                            },
+                            enabled = server.isNotBlank() && !checkingConnection && !state.busy,
+                        ) {
+                            Text("Check server connection")
+                        }
+                        if (connectionResult.isNotBlank()) Text(connectionResult)
                         OutlinedTextField(
                             password,
                             { password = it.take(512) },
@@ -113,9 +137,30 @@ fun MatrixScreen(activity: MainActivity, close: () -> Unit) {
                         )
                         Button(
                             onClick = {
+                                inputError = ""
+                                if (
+                                    runCatching {
+                                            com.example.matrix.MatrixVault.validateOrigin(server)
+                                        }
+                                        .isFailure
+                                ) {
+                                    inputError =
+                                        "Check the full server address. Local testing uses http:// followed by the computer's private IP and :8008."
+                                    return@Button
+                                }
+                                val id = user.trim()
+                                if (
+                                    runCatching { com.example.matrix.MatrixVault.validateUser(id) }
+                                        .isFailure
+                                ) {
+                                    inputError =
+                                        "Enter the complete Matrix ID, including @ at the start. Example: @demo-alice:rosevault.test"
+                                    return@Button
+                                }
+                                user = id
                                 val secret = password
                                 password = ""
-                                matrix.run { matrix.login(server, user, secret) }
+                                matrix.run { matrix.login(server, id, secret) }
                             },
                             enabled =
                                 !state.busy &&
@@ -125,10 +170,10 @@ fun MatrixScreen(activity: MainActivity, close: () -> Unit) {
                         ) {
                             Text("Sign in to homeserver")
                         }
+                        if (inputError.isNotBlank())
+                            Text(inputError, color = MaterialTheme.colorScheme.error)
                     }
-                    Text(
-                        "Password login is for your private Synapse deployment. OAuth-only public homeservers need a separate sign-in flow; they are not supported by this pilot."
-                    )
+                    Text("Use an account created by your server owner.")
                 } else if (state.active == null) {
                     Text("${state.user}\nDevice: ${state.device}")
                     TextButton(onClick = { security = true }) {
