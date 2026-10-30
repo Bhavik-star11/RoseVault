@@ -34,7 +34,7 @@ The earlier Supabase phone-login pilot used Twilio Verify. Its trial could send 
 ## Build and run
 
 1. Install JDK 21 and Android SDK platform/build tools 36.
-2. Run `./gradlew :app:assembleDebug`. The pinned Matrix SDK is fetched from Maven Central. No `google-services.json`, Supabase key or Twilio credential is needed for this build. Old `enableCloud` arguments do not enable the retired phone transport.
+2. Run `./gradlew :app:assembleDebug`. The pinned Matrix SDK is fetched from Maven Central. For a smaller APK for modern ARM64 phones, use `./gradlew -PtargetAbi=arm64-v8a :app:assembleDebug`; omit that option for the universal emulator/phone build. No `google-services.json`, Supabase key or Twilio credential is needed for this build. Old `enableCloud` arguments do not enable the retired phone transport.
 3. Install `app/build/outputs/apk/debug/app-debug.apk`. Preserve your existing vault when updating with the same signing key; uninstalling/clearing app data destroys its local keys.
 4. Deploy the private homeserver using [MATRIX_SETUP.md](MATRIX_SETUP.md), create normal accounts, open Matrix in the app, and compare devices before sensitive chat.
 

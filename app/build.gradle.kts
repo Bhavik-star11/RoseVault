@@ -25,6 +25,10 @@ android {
   buildConfigField("String", "SUPABASE_URL", quoted(if (enableCloud) supabaseUrl else ""))
   buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", quoted(if (enableCloud) publishableKey else ""))
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+  providers.gradleProperty("targetAbi").orNull?.let { abi ->
+   require(abi in setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")) { "Unsupported targetAbi" }
+   ndk { abiFilters += abi }
+  }
  }
  buildFeatures { compose = true; buildConfig = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
