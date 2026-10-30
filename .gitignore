@@ -36,5 +36,8 @@ notification-privacy.xml
 deploy/matrix/.env
 !deploy/matrix/.env.example
 deploy/matrix/data/
+deploy/matrix/data-local/
+__pycache__/
+*.pyc
 matrix-fixture.json
 matrix-session.enc

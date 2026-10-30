@@ -4,6 +4,10 @@ An experimental, MIT-licensed Android private vault and relationship messenger. 
 
 ![RoseVault chats](screenshots/chats.png)
 
+## Test free on your computer
+
+Run Synapse and PostgreSQL locally with Docker and use the separate RoseVault Local build on two phones on the same trusted Wi-Fi. No VPS, domain or SMS purchase is required. Follow [LOCAL_MATRIX.md](LOCAL_MATRIX.md). The published internet-chat build still requires HTTPS; the development build alone allows private-IP HTTP with disposable accounts.
+
 ## Matrix migration pilot
 
 Unlock the vault and tap **Matrix** in the top bar. Sign in to your own HTTPS Synapse homeserver with a full ID such as `@alice:matrix.example.org`. Matrix replaces the previous Supabase chat direction; Twilio SMS is not needed for Matrix account login. Public signup stays disabled: the homeserver operator issues accounts.

@@ -1,12 +1,16 @@
 {$MATRIX_HOST} {
-    @matrix path /_matrix/*
+    @matrix path /_matrix/client/* /_matrix/media/* /_synapse/client/*
     handle @matrix {
         request_body {
             max_size 30MB
         }
         reverse_proxy synapse:8008
     }
-    handle {
+    @landing path /
+    handle @landing {
         respond "RoseVault private homeserver" 200
+    }
+    handle {
+        respond "Not found" 404
     }
 }

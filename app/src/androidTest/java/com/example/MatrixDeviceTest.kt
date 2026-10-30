@@ -21,11 +21,13 @@ class MatrixDeviceTest {
         assumeTrue("Requires an isolated local Synapse fixture", fixture.exists())
         val config = JSONObject(fixture.readText())
         val roots =
-            listOf(
-                java.security.cert.CertificateFactory.getInstance("X.509")
-                    .generateCertificate(config.getString("certificate").byteInputStream())
-                    .encoded
-            )
+            if (config.has("certificate"))
+                listOf(
+                    java.security.cert.CertificateFactory.getInstance("X.509")
+                        .generateCertificate(config.getString("certificate").byteInputStream())
+                        .encoded
+                )
+            else emptyList()
         val root =
             File(target.cacheDir, "matrix-integration-" + java.util.UUID.randomUUID()).apply {
                 mkdirs()
@@ -40,7 +42,11 @@ class MatrixDeviceTest {
         val a = MatrixVault(aContext, CryptoEngine(), roots)
         val b = MatrixVault(context("b"), CryptoEngine(), roots)
         suspend fun waitFor(label: String, test: () -> Boolean) {
-            val success = withTimeoutOrNull(90000) { while (!test()) delay(500); true } == true
+            val success =
+                withTimeoutOrNull(90000) {
+                    while (!test()) delay(500)
+                    true
+                } == true
             assertTrue(label, success)
             println("Matrix check passed: $label")
         }

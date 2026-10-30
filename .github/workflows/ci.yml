@@ -21,6 +21,8 @@ jobs:
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Build Matrix pilot and check native code
         run: ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+      - name: Build isolated local development app
+        run: ./gradlew -PtargetAbi=arm64-v8a -PinstrumentedBuildType=local :app:assembleLocal :app:assembleLocalAndroidTest :app:lintLocal
   legacy-backend:
     runs-on: ubuntu-latest
     steps:

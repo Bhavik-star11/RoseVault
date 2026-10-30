@@ -21,8 +21,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      UID: ${SYNAPSE_UID:-991}
+      GID: ${SYNAPSE_GID:-991}
     volumes:
-      - ./data:/data
+      - ${SYNAPSE_DATA:-./data}:/data
     networks: [internal, edge]
   caddy:
     image: ${CADDY_IMAGE:-caddy:2}

@@ -20,11 +20,13 @@ class MatrixAdvancedDeviceTest {
         assumeTrue("Requires fresh disposable local accounts", file.exists())
         val fixture = JSONObject(file.readText())
         val roots =
-            listOf(
-                java.security.cert.CertificateFactory.getInstance("X.509")
-                    .generateCertificate(fixture.getString("certificate").byteInputStream())
-                    .encoded
-            )
+            if (fixture.has("certificate"))
+                listOf(
+                    java.security.cert.CertificateFactory.getInstance("X.509")
+                        .generateCertificate(fixture.getString("certificate").byteInputStream())
+                        .encoded
+                )
+            else emptyList()
         val parent =
             File(target.cacheDir, "matrix-advanced-" + java.util.UUID.randomUUID()).apply {
                 mkdirs()

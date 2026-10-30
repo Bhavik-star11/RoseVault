@@ -2,6 +2,7 @@ package com.example.matrix
 
 import android.content.Context
 import android.util.AtomicFile
+import com.example.BuildConfig
 import com.example.security.CryptoEngine
 import java.io.File
 import java.net.URI
@@ -113,19 +114,37 @@ class MatrixVault(
         get() = sessionFile.baseFile.exists()
 
     companion object {
-        fun validateOrigin(origin: String): String {
+        fun validateOrigin(
+            origin: String,
+            allowLocalHttp: Boolean = BuildConfig.LOCAL_MATRIX_DEV,
+        ): String {
             val u = URI(origin.trim())
+            val localHttp = allowLocalHttp && u.scheme == "http" && isPrivateIpv4(u.host.orEmpty())
             require(
-                u.scheme == "https" &&
+                (u.scheme == "https" || localHttp) &&
                     !u.host.isNullOrBlank() &&
                     u.rawUserInfo == null &&
                     u.rawQuery == null &&
                     u.rawFragment == null &&
                     u.path in listOf("", "/")
             ) {
-                "Enter an HTTPS homeserver origin, for example https://matrix.example.org."
+                if (allowLocalHttp)
+                    "Use HTTPS, or a private IPv4 HTTP address for disposable local tests."
+                else "Enter an HTTPS homeserver origin, for example https://matrix.example.org."
             }
             return u.toString().trimEnd('/')
+        }
+
+        private fun isPrivateIpv4(host: String): Boolean {
+            val parts = host.split('.')
+            if (parts.size != 4 || parts.any { !it.matches(Regex("0|[1-9][0-9]{0,2}")) })
+                return false
+            val ip = parts.map { it.toInt() }
+            if (ip.any { it !in 0..255 }) return false
+            return ip[0] == 10 ||
+                ip[0] == 127 ||
+                (ip[0] == 192 && ip[1] == 168) ||
+                (ip[0] == 172 && ip[1] in 16..31)
         }
 
         fun validateUser(user: String) {

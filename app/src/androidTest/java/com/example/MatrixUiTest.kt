@@ -32,12 +32,15 @@ class MatrixUiTest {
             }
             assertTrue(device.wait(Until.hasObject(By.text("Matrix")), 10000))
             device.findObject(By.text("Matrix")).click()
-            assertTrue(device.wait(Until.hasObject(By.text("Homeserver HTTPS origin")), 10000))
+            val serverLabel =
+                if (BuildConfig.LOCAL_MATRIX_DEV) "Homeserver address (local test)"
+                else "Homeserver HTTPS origin"
+            assertTrue(device.wait(Until.hasObject(By.text(serverLabel)), 10000))
             assertTrue(device.hasObject(By.text("Matrix ID")))
             assertFalse(device.hasObject(By.text("Send verification code")))
             scenario.onActivity { it.lock() }
             assertTrue(device.wait(Until.hasObject(By.text("System Security Vault")), 10000))
-            assertFalse(device.hasObject(By.text("Homeserver HTTPS origin")))
+            assertFalse(device.hasObject(By.text(serverLabel)))
         }
     }
 }

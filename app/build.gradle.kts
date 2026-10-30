@@ -22,6 +22,7 @@ android {
   versionCode = 8
   versionName = "2.0.0-alpha.1"
   buildConfigField("boolean", "CLOUD_ENABLED", enableCloud.toString())
+  buildConfigField("boolean", "LOCAL_MATRIX_DEV", "false")
   buildConfigField("String", "SUPABASE_URL", quoted(if (enableCloud) supabaseUrl else ""))
   buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", quoted(if (enableCloud) publishableKey else ""))
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -29,6 +30,19 @@ android {
    require(abi in setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")) { "Unsupported targetAbi" }
    ndk { abiFilters += abi }
   }
+ }
+ buildTypes {
+  create("local") {
+   initWith(getByName("debug"))
+   applicationIdSuffix = ".local"
+   versionNameSuffix = "-local"
+   signingConfig = signingConfigs.getByName("debug")
+   matchingFallbacks += "debug"
+   buildConfigField("boolean", "LOCAL_MATRIX_DEV", "true")
+  }
+ }
+ testBuildType = providers.gradleProperty("instrumentedBuildType").orElse("debug").get().also {
+  require(it in setOf("debug", "local")) { "Use debug or local for instrumentedBuildType" }
  }
  buildFeatures { compose = true; buildConfig = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }

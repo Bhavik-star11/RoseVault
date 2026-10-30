@@ -13,6 +13,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.BuildConfig
 import com.example.MainActivity
 import kotlinx.coroutines.delay
 
@@ -63,6 +64,11 @@ fun MatrixScreen(activity: MainActivity, close: () -> Unit) {
                     TextButton(onClick = matrix::clearError) { Text("Dismiss error") }
                 }
                 if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (BuildConfig.LOCAL_MATRIX_DEV)
+                    Text(
+                        "LOCAL TEST BUILD · Use disposable accounts only. HTTP exposes sign-in and network traffic on this Wi-Fi. Keep this server on a trusted local network.",
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 if (state.user.isEmpty()) {
                     Text(
                         "Use an account on your own Matrix homeserver. No Twilio or SMS is required. The server operator creates accounts while public registration is disabled."
@@ -81,7 +87,13 @@ fun MatrixScreen(activity: MainActivity, close: () -> Unit) {
                         OutlinedTextField(
                             server,
                             { server = it.take(300) },
-                            label = { Text("Homeserver HTTPS origin") },
+                            label = {
+                                Text(
+                                    if (BuildConfig.LOCAL_MATRIX_DEV)
+                                        "Homeserver address (local test)"
+                                    else "Homeserver HTTPS origin"
+                                )
+                            },
                             placeholder = { Text("https://matrix.example.org") },
                             singleLine = true,
                         )

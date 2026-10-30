@@ -1,0 +1,7 @@
+# Development overlay. Never enable this file on a public server.
+services:
+  synapse:
+    ports:
+      - "${MATRIX_LOCAL_IP:?Run prepare-local.py first}:${MATRIX_LOCAL_PORT:-8008}:8008"
+  caddy:
+    profiles: [production]

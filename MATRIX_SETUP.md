@@ -16,6 +16,8 @@ The application uses the Apache-2.0 Matrix Rust SDK Android bindings, pinned to 
 - **Device ID:** a Matrix session identity tied to that device's cryptographic keys. A new login/device is not automatically trusted.
 - **Sync:** the SDK's process for fetching changes, reconciling local echoes and catching up after reconnect. It cannot deliver internet traffic to a phone with no network.
 
+For a free same-Wi-Fi development setup, use [LOCAL_MATRIX.md](LOCAL_MATRIX.md). It has a separate app/package, private-IP HTTP guard, local Compose overlay and isolated server data. The production steps below continue to require HTTPS.
+
 ## Deploy Synapse, Postgres and HTTPS
 
 This guide does not provision a paid VPS. Review costs and obtain a Linux host/domain you control first. The checked-in Compose setup is a private pilot with federation blocked, public signup disabled, and only HTTPS exposed.
