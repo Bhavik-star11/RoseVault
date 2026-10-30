@@ -49,7 +49,8 @@ class VaultCallEngine(private val context: Context, private val repository: Rose
         watches.forEach { it.cancel() }
         watches.clear()
         if (
-            repository.uid == "local" ||
+            !repository.cloudReady ||
+                repository.uid == "local" ||
                 conversations.none { it.partnerUid.isNotEmpty() && it.transport == "cloud" }
         )
             return

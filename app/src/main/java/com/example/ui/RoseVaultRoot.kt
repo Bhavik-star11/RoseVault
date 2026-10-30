@@ -123,6 +123,7 @@ fun RoseVaultRoot(activity: MainActivity) {
     var conversationId by remember { mutableStateOf<String?>(null) }
     var newSpace by remember { mutableStateOf(false) }
     var showNearby by remember { mutableStateOf(false) }
+    var showMatrix by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val call by activity.calls.state.collectAsStateWithLifecycle()
@@ -145,6 +146,7 @@ fun RoseVaultRoot(activity: MainActivity) {
         if (!unlocked) {
             conversationId = null
             newSpace = false
+            showMatrix = false
         }
         while (unlocked) {
             delay(15_000)
@@ -152,6 +154,11 @@ fun RoseVaultRoot(activity: MainActivity) {
             repo.retry()
         }
     }
+    if (unlocked && showMatrix)
+        MatrixScreen(activity) {
+            showMatrix = false
+            activity.closeMatrix()
+        }
     BackHandler(enabled = unlocked && conversationId != null) { conversationId = null }
     Box(
         Modifier.fillMaxSize()
@@ -242,6 +249,7 @@ fun RoseVaultRoot(activity: MainActivity) {
                             fontSize = 23.sp,
                             modifier = Modifier.weight(1f),
                         )
+                        TextButton(onClick = { showMatrix = true }) { Text("Matrix") }
                         IconButton(onClick = { showNearby = true }) {
                             Icon(Icons.Rounded.WifiTethering, "Nearby chats", tint = BlushPink)
                         }

@@ -1,0 +1,23 @@
+# Set ROSE_AI_TOKEN in the proxy service environment, never in this file.
+# Replace the domain, keep Ollama listening only on loopback, validate before reload.
+ai.example.org {
+    @chat path /api/chat
+    handle @chat {
+        request_body {
+            max_size 16KB
+        }
+        @authorized header Authorization "Bearer {$ROSE_AI_TOKEN}"
+        handle @authorized {
+            reverse_proxy 127.0.0.1:11434 {
+                header_up -Authorization
+                transport http {
+                    response_header_timeout 90s
+                }
+            }
+        }
+        respond "Unauthorized" 401
+    }
+    handle {
+        respond "Not found" 404
+    }
+}

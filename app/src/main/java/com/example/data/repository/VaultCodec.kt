@@ -31,6 +31,7 @@ internal fun VaultState.encode(): String =
                 ),
             )
             put("messages", array(messages.map { it.json() }))
+            put("privateIntentions", JSONObject(privateIntentions))
             put(
                 "dates",
                 array(
@@ -87,6 +88,10 @@ internal fun decodeState(text: String): VaultState {
     val j = JSONObject(text)
     val s = j.getJSONObject("settings")
     return VaultState(
+        privateIntentions =
+            j.optJSONObject("privateIntentions")?.let { o ->
+                o.keys().asSequence().associateWith { o.getString(it) }
+            } ?: emptyMap(),
         conversations =
             j.getJSONArray("conversations").objects().map {
                 VaultConversation(
@@ -149,6 +154,8 @@ internal fun EncryptedMessage.json(): JSONObject =
         put("attachment", attachment)
         put("mime", mime)
         put("delivery", delivery)
+        put("kind", kind)
+        put("reference", reference)
     }
 
 internal fun messageFromJson(j: JSONObject) =
@@ -162,4 +169,6 @@ internal fun messageFromJson(j: JSONObject) =
         j.optString("attachment"),
         j.optString("mime"),
         j.optString("delivery"),
+        j.optString("kind", "text"),
+        j.optString("reference"),
     )

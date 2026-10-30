@@ -126,7 +126,7 @@ class ButtonAuditTest {
                     click("Sign in with phone number")
                     visible("Sign in with your number")
                     click("Cancel")
-                } else visible("Offline mode · no account needed")
+                } else visible("Local vault · no account needed")
                 // Verify a local call action reports its actual prerequisite instead of trying a
                 // fake
                 // call.

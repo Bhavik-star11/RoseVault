@@ -14,16 +14,33 @@ import com.example.MainActivity
 import com.example.R
 
 object NotificationVaultHelper {
+    fun policy(context: Context, value: String) {
+        context
+            .getSharedPreferences("notification-privacy", Context.MODE_PRIVATE)
+            .edit()
+            .putString("mode", value)
+            .apply()
+        NotificationManagerCompat.from(context).cancelAll()
+    }
+
     fun postDiscreetNotification(context: Context, id: String, conversationId: String) {
+        val stealth =
+            context
+                .getSharedPreferences("notification-privacy", Context.MODE_PRIVATE)
+                .getString("mode", "PRIVATE") != "PRIVATE"
+        val visibility =
+            if (stealth) NotificationCompat.VISIBILITY_SECRET
+            else NotificationCompat.VISIBILITY_PRIVATE
+        val channel = if (stealth) "protected_activity" else "private_messages"
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
             NotificationChannel(
-                    "protected_activity",
-                    "Protected activity",
+                    channel,
+                    if (stealth) "Protected activity" else "Private messages",
                     NotificationManager.IMPORTANCE_DEFAULT,
                 )
                 .apply {
-                    lockscreenVisibility = android.app.Notification.VISIBILITY_SECRET
+                    lockscreenVisibility = visibility
                     setShowBadge(false)
                 }
         )
@@ -47,12 +64,22 @@ object NotificationVaultHelper {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
-        val notification =
-            NotificationCompat.Builder(context, "protected_activity")
+        val publicVersion =
+            NotificationCompat.Builder(context, channel)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle("RoseVault")
-                .setContentText("Protected Activity")
-                .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+                .setContentText("New private message — unlock to read")
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .build()
+        val notification =
+            NotificationCompat.Builder(context, channel)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("RoseVault")
+                .setContentText(
+                    if (stealth) "Protected Activity" else "New private message — unlock to read"
+                )
+                .setVisibility(visibility)
+                .setPublicVersion(publicVersion)
                 .setContentIntent(pending)
                 .setAutoCancel(true)
                 .build()

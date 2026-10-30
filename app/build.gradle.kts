@@ -6,16 +6,10 @@ plugins {
  id("org.jetbrains.kotlin.android")
  id("org.jetbrains.kotlin.plugin.compose")
 }
-val cloudProperties = Properties().apply {
- rootProject.file("supabase.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
-}
-val supabaseUrl = providers.environmentVariable("SUPABASE_URL").orNull ?: cloudProperties.getProperty("SUPABASE_URL", "")
-val publishableKey = providers.environmentVariable("SUPABASE_PUBLISHABLE_KEY").orNull ?: cloudProperties.getProperty("SUPABASE_PUBLISHABLE_KEY", "")
-val enableCloud = providers.gradleProperty("enableCloud").orNull?.toBooleanStrict() ?: (supabaseUrl.isNotBlank() && publishableKey.isNotBlank())
-if (enableCloud) {
- require(supabaseUrl.startsWith("https://") && URI(supabaseUrl).let { it.host != null && it.rawUserInfo == null && it.rawQuery == null && it.rawFragment == null && it.path in listOf("", "/") }) { "Use your project's HTTPS Supabase origin" }
- require(publishableKey.matches(Regex("sb_publishable_[A-Za-z0-9_-]+"))) { "Use a Supabase publishable key; never put a secret/service-role key in the app" }
-}
+// Matrix is the cloud messenger. Keep the previous backend disabled during migration.
+val enableCloud = false
+val supabaseUrl = ""
+val publishableKey = ""
 fun quoted(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 android {
  namespace = "com.example"
@@ -25,8 +19,8 @@ android {
   applicationId = "com.aistudio.rosevault.kxpqzm"
   minSdk = 31
   targetSdk = 36
-  versionCode = 7
-  versionName = "1.5.0"
+  versionCode = 8
+  versionName = "2.0.0-alpha.1"
   buildConfigField("boolean", "CLOUD_ENABLED", enableCloud.toString())
   buildConfigField("String", "SUPABASE_URL", quoted(if (enableCloud) supabaseUrl else ""))
   buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", quoted(if (enableCloud) publishableKey else ""))
@@ -38,6 +32,7 @@ android {
  packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }
 dependencies {
+ implementation("org.matrix.rustcomponents:sdk-android:26.10.23")
  implementation(platform("androidx.compose:compose-bom:2025.08.00"))
  implementation("androidx.core:core-ktx:1.16.0")
  implementation("androidx.activity:activity-compose:1.10.1")

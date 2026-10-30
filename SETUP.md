@@ -1,3 +1,5 @@
+> Legacy Supabase pilot reference. Current Matrix setup is in [MATRIX_SETUP.md](MATRIX_SETUP.md); this document does not configure Matrix messaging/calls.
+
 # Deploy your own RoseVault backend
 
 ## 1. Supabase project

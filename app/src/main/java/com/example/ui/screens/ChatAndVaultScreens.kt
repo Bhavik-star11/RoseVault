@@ -170,19 +170,21 @@ fun NewSpaceDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    (if (com.example.BuildConfig.CLOUD_ENABLED) listOf("Phone number", "On this phone", "Contact code") else listOf("On this phone")).forEachIndexed {
-                        i,
-                        label ->
-                        FilterChip(
-                            selected = mode == (if (com.example.BuildConfig.CLOUD_ENABLED) i else 1),
-                            onClick = {
-                                mode = if (com.example.BuildConfig.CLOUD_ENABLED) i else 1
-                                problem = null
-                            },
-                            enabled = !busy,
-                            label = { Text(label, fontSize = 10.sp) },
-                        )
-                    }
+                    (if (com.example.BuildConfig.CLOUD_ENABLED)
+                            listOf("Phone number", "On this phone", "Contact code")
+                        else listOf("On this phone"))
+                        .forEachIndexed { i, label ->
+                            FilterChip(
+                                selected =
+                                    mode == (if (com.example.BuildConfig.CLOUD_ENABLED) i else 1),
+                                onClick = {
+                                    mode = if (com.example.BuildConfig.CLOUD_ENABLED) i else 1
+                                    problem = null
+                                },
+                                enabled = !busy,
+                                label = { Text(label, fontSize = 10.sp) },
+                            )
+                        }
                 }
                 problem?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (mode == 0)
@@ -274,6 +276,7 @@ fun ChatScreen(
     var text by remember(c.id) { mutableStateOf("") }
     var safety by remember { mutableStateOf(false) }
     var privacy by remember { mutableStateOf(false) }
+    var spaces by remember(c.id) { mutableStateOf(false) }
     var requestedVideo by remember { mutableStateOf<Boolean?>(null) }
     val scope = rememberCoroutineScope()
     val list = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -302,11 +305,14 @@ fun ChatScreen(
                         else Modifier,
                 )
             }
-            if (c.partnerUid.isNotEmpty() && c.transport == "cloud") {
+            if (repo.cloudReady && c.partnerUid.isNotEmpty() && c.transport == "cloud") {
                 IconButton(onClick = { call(false) }) { Icon(Icons.Rounded.Call, "Voice call") }
                 IconButton(onClick = { call(true) }) { Icon(Icons.Rounded.Videocam, "Video call") }
             }
             IconButton(onClick = { privacy = true }) { Icon(Icons.Rounded.Tune, "Chat privacy") }
+        }
+        TextButton(onClick = { spaces = true }, modifier = Modifier.padding(horizontal = 16.dp)) {
+            Text("Connection Space · Our Story")
         }
         HorizontalDivider(color = GlassBorder.copy(alpha = .25f))
         if (messages.isEmpty())
@@ -359,7 +365,22 @@ fun ChatScreen(
                                 )
                                 .padding(16.dp)
                         ) {
-                            if (m.text.isNotEmpty()) Text(m.text, lineHeight = 23.sp)
+                            if (m.kind != "text")
+                                Text(
+                                    when (m.kind) {
+                                        "space.offer" ->
+                                            "Invitation to ${m.text} · open Connection Space to respond"
+                                        "space.accept" -> "Shared space accepted: ${m.text}"
+                                        "space.decline" ->
+                                            "Invitation: not now · normal chat continues"
+                                        "space.close" -> "${m.text} · normal chat continues"
+                                        else -> m.kind.replaceFirstChar { it.uppercase() }
+                                    },
+                                    fontSize = 11.sp,
+                                    color = BlushPink,
+                                )
+                            if (m.text.isNotEmpty() && !m.kind.startsWith("space."))
+                                Text(m.text, lineHeight = 23.sp)
                             if (m.attachment.isNotEmpty())
                                 TextButton(
                                     onClick = {
@@ -455,6 +476,7 @@ fun ChatScreen(
             }
         }
     }
+    if (spaces) ConnectionSpacesDialog(activity, c, state) { spaces = false }
     if (safety)
         AlertDialog(
             onDismissRequest = { safety = false },

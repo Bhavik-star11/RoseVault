@@ -1,3 +1,5 @@
+> Legacy Supabase pilot reference. Current Matrix setup is in [MATRIX_SETUP.md](MATRIX_SETUP.md); this document does not configure Matrix messaging/calls.
+
 # Calls between distant phones — Supabase
 
 Both phones need internet, verified Supabase phone accounts, and a shared cloud conversation. Nearby is a separate local-radio mode. The repository includes a real foreground WebRTC client with encrypted offer/answer/ICE signaling; live media requires an external TURN relay.

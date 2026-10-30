@@ -27,3 +27,14 @@ supabase/.branches/
 # Explicitly exclude exported test sessions and local fixture material
 *fixture-private*
 *transport-fixture*
+
+# Self-hosted service credentials
+rose-ai-server.enc
+notification-privacy.xml
+
+# Matrix homeserver data and device test fixtures
+deploy/matrix/.env
+!deploy/matrix/.env.example
+deploy/matrix/data/
+matrix-fixture.json
+matrix-session.enc

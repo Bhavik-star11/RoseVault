@@ -27,6 +27,8 @@ data class EncryptedMessage(
     val attachment: String = "",
     val mime: String = "",
     val delivery: String = "Local only",
+    val kind: String = "text",
+    val reference: String = "",
 )
 
 data class VirtualDateEvent(
@@ -58,7 +60,7 @@ data class TrustedDevice(
 data class VaultSettings(
     val secureScreen: Boolean = true,
     val timeoutSeconds: Int = 60,
-    val notificationPolicy: String = "ALWAYS_REQUIRE_BIOMETRIC",
+    val notificationPolicy: String = "PRIVATE",
     val onboardingComplete: Boolean = false,
 )
 
@@ -69,6 +71,7 @@ data class VaultState(
     val media: List<VaultMedia> = emptyList(),
     val audit: List<SecurityEvent> = emptyList(),
     val settings: VaultSettings = VaultSettings(),
+    val privateIntentions: Map<String, String> = emptyMap(),
 )
 
 enum class BiometricUnlockScope {

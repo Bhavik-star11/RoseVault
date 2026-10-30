@@ -136,6 +136,10 @@ class RoseVaultRepository(val context: Context, val crypto: CryptoEngine = Crypt
                             )
                     )
             loaded = true
+            com.example.security.NotificationVaultHelper.policy(
+                context,
+                mutable.value.settings.notificationPolicy,
+            )
             online.value = internetAvailable()
             sweep()
             audit("Vault unlocked")
@@ -180,7 +184,13 @@ class RoseVaultRepository(val context: Context, val crypto: CryptoEngine = Crypt
         change { it.copy(audit = (listOf(SecurityEvent(text)) + it.audit).take(200)) }
     }
 
+    fun privateIntention(id: String, intention: String) {
+        require(intention in setOf("Friends", "Dating", "Lovers", "Unsure"))
+        change { it.copy(privateIntentions = it.privateIntentions + (id to intention)) }
+    }
+
     fun settings(value: VaultSettings) {
+        com.example.security.NotificationVaultHelper.policy(context, value.notificationPolicy)
         change { it.copy(settings = value) }
         audit("Privacy settings updated")
     }
@@ -328,9 +338,30 @@ class RoseVaultRepository(val context: Context, val crypto: CryptoEngine = Crypt
         audit("Conversation privacy updated")
     }
 
-    suspend fun send(id: String, text: String, media: VaultMedia? = null) {
+    suspend fun send(
+        id: String,
+        text: String,
+        media: VaultMedia? = null,
+        kind: String = "text",
+        reference: String = "",
+    ) {
         require(loaded) { "Unlock the vault first" }
         require(text.isNotBlank() || media != null)
+        require(
+            kind in
+                setOf(
+                    "text",
+                    "space.offer",
+                    "space.accept",
+                    "space.decline",
+                    "space.close",
+                    "moment",
+                    "mood",
+                    "journal",
+                    "goal",
+                    "movie",
+                )
+        )
         require(text.toByteArray().size <= 16_000) { "Keep each message under 16 KB" }
         val c = mutable.value.conversations.first { it.id == id }
         val message =
@@ -338,6 +369,8 @@ class RoseVaultRepository(val context: Context, val crypto: CryptoEngine = Crypt
                 conversationId = id,
                 senderId = if (c.transport == "nearby") nearbyId else uid,
                 text = text.trim(),
+                kind = kind,
+                reference = reference,
                 expiresAt =
                     if (c.ephemeral || c.memoryFree) System.currentTimeMillis() + 86_400_000 else 0,
                 attachment = media?.file ?: "",

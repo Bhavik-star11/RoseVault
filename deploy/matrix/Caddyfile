@@ -1,0 +1,12 @@
+{$MATRIX_HOST} {
+    @matrix path /_matrix/*
+    handle @matrix {
+        request_body {
+            max_size 30MB
+        }
+        reverse_proxy synapse:8008
+    }
+    handle {
+        respond "RoseVault private homeserver" 200
+    }
+}

@@ -1,51 +1,60 @@
 # RoseVault
 
-An experimental native Android vault and messenger, released under the **MIT license**. Kotlin, Jetpack Compose, Android Keystore, Supabase, WebRTC, and Nearby Connections. Android 12+.
+An experimental, MIT-licensed Android private vault and relationship messenger. Native Kotlin/Jetpack Compose, Android Keystore, **Matrix Rust SDK** for encrypted internet chat, and Nearby Connections for phone-to-phone offline messages. Android 12+.
 
 ![RoseVault chats](screenshots/chats.png)
 
-## What works locally
+## Matrix migration pilot
 
-- Encrypted local spaces, saved messages, media import/open/delete, calendar, and an encrypted persistent outbox.
-- Phone screen-lock/strong-biometric entry, optional separate RoseVault password, inactivity/background locking, and screenshot protection.
-- Nearby text and attachment exchange with code comparison, pinned identities, acknowledgements, deduplication, and reconnect queues. Both apps must be open and unlocked, with Bluetooth/Wi-Fi and Google Play services available.
+Unlock the vault and tap **Matrix** in the top bar. Sign in to your own HTTPS Synapse homeserver with a full ID such as `@alice:matrix.example.org`. Matrix replaces the previous Supabase chat direction; Twilio SMS is not needed for Matrix account login. Public signup stays disabled: the homeserver operator issues accounts.
 
-## Supabase backend
+The SDK handles Olm/Megolm, encrypted room creation, timeline local echoes, persisted send queues, reconnect sync and per-device keys. The UI offers invitation review, text chat, pagination, optional read receipts/typing, reactions, edit/redaction actions, encrypted file attachments, SDK SAS verification and encrypted recovery setup. A compiling action is not proof of a successful live security flow: see [VALIDATION.md](VALIDATION.md) for tested versus remaining checks.
 
-The Android cloud client uses Supabase Auth phone OTP, a protected PostgreSQL schema, and a private Storage bucket. It supports opt-in number lookup, pinned two-person conversations, encrypted messages/calendar data, and foreground WebRTC call signaling. The app contains no Firebase SDK or Firebase account configuration.
+This is a migration pilot, **not an independently audited or production-ready secure messenger**. Existing local vault and Nearby data remain separate and readable. Supabase-only accounts/history do not automatically become Matrix accounts/history. The old cloud phone backend is disabled, not silently reused for Matrix messages. Its source and operator documents remain as legacy reference.
 
-**This is an early reference implementation, not an independently audited production secure messenger.** Device keys use static P-256 ECDH and safety numbers; a reviewed ratcheting protocol, forward secrecy, multi-device fan-out, key backup and recovery are not implemented. Compare safety numbers before sensitive conversations. See [SECURITY.md](SECURITY.md).
+Matrix protects message content; homeservers still see accounts, room state/membership, event timing and traffic metadata. Verify devices and save a private recovery secret before relying on long-term history. Clearing app data removes local hardware keys. Read [SECURITY.md](SECURITY.md) and [MATRIX_SETUP.md](MATRIX_SETUP.md).
 
-Cloud messaging polls while unlocked (approximately every five seconds; call signaling every two seconds). It does not provide background push or guaranteed ringing while closed. Phone OTP needs an SMS provider configured in your own Supabase project. Live calls require your own TURN relay and server-side secrets. Neither SMS nor calling is automatically free because the source is open.
+## Local vault and Nearby
+
+- Encrypted local notes, saved messages, media import/open/delete, calendar and a persistent outbox.
+- Phone screen-lock/strong-biometric entry, optional separate RoseVault password, inactivity/background locking and screenshot protection.
+- Nearby text/attachment exchange with paired safety-number comparison, acknowledgements, deduplication and reconnect queues. Both apps must be open and unlocked with Bluetooth/Wi-Fi and Google Play services available.
+- Optional Connection Spaces/Our Story tools in the legacy/local chat surface; their custom consent records are not yet mapped into Matrix events. Neutral Matrix chat does not impose relationship labels.
+
+## Optional services and limits
+
+[SELF_HOSTED_SERVICES.md](SELF_HOSTED_SERVICES.md) explains the selected self-hosted Ollama and ntfy/UnifiedPush direction. Rose is a manually reviewed HTTPS Ollama client; only the typed context is submitted and the server operator can read it. No prompt history is saved by the app. It is general communication support, not counseling, diagnosis or relationship judgment. It requires a reachable server and cannot run on a fully disconnected phone.
+
+Private/Stealth notification builders and a local privacy test are available. **Closed-app Matrix push, a UnifiedPush gateway/receiver, MatrixRTC/LiveKit calls, movie synchronization, on-device LLM inference, and automatic migration are not activated by this pilot.** A homeserver does not carry offline internet calls. Nearby is the independent offline radio transport.
+
+## Phone login: trial and upgrade
+
+The earlier Supabase phone-login pilot used Twilio Verify. Its trial could send codes only to recipients verified in the Twilio account; public SMS registration required an operator upgrade and regional setup. Recipient numbers and OTPs must never be committed. Matrix usernames avoid that SMS dependency, but hosting, storage, bandwidth and call relays still have costs. App users do not need their own Twilio subscription.
 
 ## Build and run
 
 1. Install JDK 21 and Android SDK platform/build tools 36.
-2. For an offline build: `./gradlew -PenableCloud=false :app:assembleDebug`.
-3. For cloud mode: deploy your own backend using [SETUP.md](SETUP.md), copy `supabase.properties.example` to `supabase.properties`, enter your HTTPS project URL and **publishable** key, then run `./gradlew -PenableCloud=true :app:assembleDebug`.
-4. Install the APK from `app/build/outputs/apk/debug/`. Keep your existing vault installed when updating with the same signing key. Uninstalling/clearing data destroys local hardware keys; phone login cannot recover them.
+2. Run `./gradlew :app:assembleDebug`. The pinned Matrix SDK is fetched from Maven Central. No `google-services.json`, Supabase key or Twilio credential is needed for this build. Old `enableCloud` arguments do not enable the retired phone transport.
+3. Install `app/build/outputs/apk/debug/app-debug.apk`. Preserve your existing vault when updating with the same signing key; uninstalling/clearing app data destroys its local keys.
+4. Deploy the private homeserver using [MATRIX_SETUP.md](MATRIX_SETUP.md), create normal accounts, open Matrix in the app, and compare devices before sensitive chat.
 
-A clone generates its own debug signing key and cannot update an APK signed by another developer. Use a separate test installation/application ID instead of uninstalling a valuable vault. Public distribution needs a maintained release-signing process; do not commit signing keys.
+A clone generates its own debug signing key and cannot update an APK signed by a different developer. Public distribution needs a maintained release-signing process; never commit signing keys.
 
 ## Verify
 
 ```sh
-./gradlew -PenableCloud=false :app:testDebugUnitTest :app:lintDebug
-npm ci
-npm test
-# With Docker running:
-npm run backend:start
-npm run test:rls
+./gradlew :app:testDebugUnitTest :app:lintDebug
+./gradlew :app:assembleDebugAndroidTest
 ```
 
-Native device tests are under `app/src/androidTest`. [VALIDATION.md](VALIDATION.md) distinguishes actual checks from remaining real-device/service tests. GitHub Actions builds offline and checks the local backend without project credentials.
+Native device tests are under `app/src/androidTest`. The opt-in Matrix test needs a separate local Synapse fixture with two disposable accounts and a test CA; production login has no injected-token or certificate-bypass route. Legacy Supabase database/relay tests remain in `tests` and are not Matrix encryption tests.
 
 ## Documentation
 
-- [SETUP.md](SETUP.md): deploy your own Supabase project, phone provider and private media.
-- [REMOTE_CALLS_SETUP.md](REMOTE_CALLS_SETUP.md): TURN and calls between different networks.
-- [APP_PASSWORD.md](APP_PASSWORD.md): password use, owner recovery and limits.
-- [OFFLINE.md](OFFLINE.md): Nearby pairing and offline queues.
+- [MATRIX_SETUP.md](MATRIX_SETUP.md): concepts, pinned SDK, Synapse/Postgres/HTTPS, Android architecture and rollout tests.
+- [SELF_HOSTED_SERVICES.md](SELF_HOSTED_SERVICES.md): Ollama, ntfy, consent features and honest feature limits.
+- [APP_PASSWORD.md](APP_PASSWORD.md), [OFFLINE.md](OFFLINE.md), [VALIDATION.md](VALIDATION.md).
+- [SETUP.md](SETUP.md) and [REMOTE_CALLS_SETUP.md](REMOTE_CALLS_SETUP.md): legacy Supabase pilot references; do not deploy them expecting Matrix calls.
 - [CONTRIBUTING.md](CONTRIBUTING.md), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), [LICENSE](LICENSE).
 
-The MIT license applies to RoseVault's original source. Third-party components keep their own licenses. Nearby still requires Google Play services; using Supabase does not remove that dependency.
+The MIT license covers RoseVault's original source. Matrix Rust SDK is Apache-2.0; Synapse and other server components retain their own licenses. Nearby still requires Google Play services. Preserve upstream notices when distributing binaries.

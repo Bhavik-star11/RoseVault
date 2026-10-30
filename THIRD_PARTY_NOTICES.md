@@ -7,3 +7,5 @@ The Android build depends on AndroidX/Jetpack Compose, Kotlin/coroutines, the We
 Nearby requires Google Play services on supported phones; removing Firebase does not make that optional dependency an entirely open-source radio stack. WebRTC and its distribution include additional third-party notices. Preserve upstream notices when distributing binaries.
 
 The grey launcher concepts were generated for this project with the built-in image-generation tool. The user selected the shield-and-lock concept; design/ICON_PROMPTS.md records the directions. The pink in-app vector branding is repository-native.
+
+Matrix Android bindings use the Apache-2.0 Matrix Rust SDK. The Android certificate verifier compatibility source in `org/rustls/platformverifier/CertificateVerifier.kt` is MIT-licensed, copyright 2022 1Password and 2026 Element Creations Ltd.; its full MIT notice is retained in the file. Other Element X implementation code has not been copied.

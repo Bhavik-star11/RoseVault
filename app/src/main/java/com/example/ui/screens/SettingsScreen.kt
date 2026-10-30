@@ -45,6 +45,7 @@ fun SecurityScreen(activity: MainActivity, state: VaultState, modifier: Modifier
     LaunchedEffect(signedInForRefresh(activity)) { activity.phoneLogin.refresh(activity) }
     val signedIn by activity.accountConnected.collectAsStateWithLifecycle()
     var showAudit by remember { mutableStateOf(false) }
+    var showRose by remember { mutableStateOf(false) }
     var notices by remember { mutableStateOf<List<VaultNotification>?>(null) }
     val notification =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { allowed ->
@@ -86,9 +87,9 @@ fun SecurityScreen(activity: MainActivity, state: VaultState, modifier: Modifier
                 )
                 if (!com.example.BuildConfig.CLOUD_ENABLED) {
                     Spacer(Modifier.height(14.dp))
-                    Text("Offline mode · no account needed", color = BlushPink)
+                    Text("Local vault · no account needed", color = BlushPink)
                     Text(
-                        "Use Nearby from Chats to message someone close by. Both phones must open RoseVault and accept the connection.",
+                        "Open Matrix in the top bar for internet chats, or Nearby for phone-to-phone messaging without internet.",
                         color = MutedRoseGray,
                         fontSize = 12.sp,
                     )
@@ -221,6 +222,39 @@ fun SecurityScreen(activity: MainActivity, state: VaultState, modifier: Modifier
                     "Protected activity only",
                     "Sender names and message text never appear in notifications",
                 ) {}
+                Spacer(Modifier.height(10.dp))
+                Text("Lock-screen notification privacy", fontSize = 14.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("PRIVATE" to "Private", "STEALTH" to "Stealth").forEach { (mode, label)
+                        ->
+                        FilterChip(
+                            selected =
+                                if (mode == "PRIVATE")
+                                    state.settings.notificationPolicy == "PRIVATE"
+                                else state.settings.notificationPolicy != "PRIVATE",
+                            onClick = {
+                                repo.settings(state.settings.copy(notificationPolicy = mode))
+                            },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                Text(
+                    "Private shows only a generic alert. Stealth requests no lock-screen trace. Sender names and message text are always hidden. Android channel settings can affect visibility; test on your phone.",
+                    color = MutedRoseGray,
+                    fontSize = 12.sp,
+                )
+                TextButton(
+                    onClick = {
+                        com.example.security.NotificationVaultHelper.postDiscreetNotification(
+                            activity,
+                            "privacy-check",
+                            "",
+                        )
+                    }
+                ) {
+                    Text("Send privacy test notification")
+                }
                 TextButton(
                     onClick = {
                         if (Build.VERSION.SDK_INT >= 33)
@@ -355,6 +389,62 @@ fun SecurityScreen(activity: MainActivity, state: VaultState, modifier: Modifier
             }
         }
         item {
+            Glass(Modifier.fillMaxWidth()) {
+                Eyebrow("Rose · private reflection")
+                TextButton(onClick = { showRose = true }) { Text("Open optional Rose AI") }
+                Text(
+                    "Your self-hosted Ollama server sees only text you submit. No automatic chat access. A reachable server is required.",
+                    color = MutedRoseGray,
+                    fontSize = 12.sp,
+                )
+                Spacer(Modifier.height(20.dp))
+                Eyebrow("Open source · MIT license")
+                Spacer(Modifier.height(12.dp))
+                Text("Matrix and service costs", fontFamily = FontFamily.Serif, fontSize = 23.sp)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Matrix login uses your homeserver account and Matrix ID. No Twilio or SMS is required. Open Matrix from the top bar to connect.",
+                    color = MutedRoseGray,
+                    fontSize = 12.sp,
+                    lineHeight = 19.sp,
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Self-hosting, storage, AI, push and call relays may cost money even though RoseVault is open source. The earlier phone-login pilot used Twilio: its trial accepted verified numbers only, and public SMS login required an operator upgrade. That old phone backend is disabled in this Matrix build.",
+                    color = MutedRoseGray,
+                    fontSize = 12.sp,
+                    lineHeight = 19.sp,
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Local vault and Nearby chats do not need SMS registration. Distant calls separately need a calling relay.",
+                    color = MutedRoseGray,
+                    fontSize = 12.sp,
+                    lineHeight = 19.sp,
+                )
+                TextButton(
+                    onClick = {
+                        runCatching {
+                                activity.startActivity(
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        android.net.Uri.parse(
+                                            "https://github.com/Bhavik-star11/RoseVault/blob/main/MATRIX_SETUP.md"
+                                        ),
+                                    )
+                                )
+                            }
+                            .onFailure {
+                                repo.error.value =
+                                    "No browser is available to open the setup guide."
+                            }
+                    }
+                ) {
+                    Text("Source code and Matrix setup")
+                }
+            }
+        }
+        item {
             OutlinedButton(onClick = activity::lock, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Rounded.Lock, null)
                 Spacer(Modifier.width(8.dp))
@@ -371,6 +461,7 @@ fun SecurityScreen(activity: MainActivity, state: VaultState, modifier: Modifier
             )
         }
     }
+    if (showRose) RoseAiDialog(activity) { showRose = false }
     notices?.let { items ->
         AlertDialog(
             onDismissRequest = { notices = null },

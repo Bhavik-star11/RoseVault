@@ -77,6 +77,77 @@ class MainActivity : FragmentActivity() {
                 }
             }
         }
+    val matrix by lazy { com.example.matrix.MatrixVault(applicationContext, repository.crypto) }
+    val roseAi by lazy { com.example.ai.RoseAi(applicationContext, repository.crypto) }
+
+    private var matrixAttachmentRoom: String? = null
+    private val matrixPicker =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            val roomId = matrixAttachmentRoom
+            matrixAttachmentRoom = null
+            if (uri != null && roomId != null)
+                verified("Share encrypted Matrix attachment") {
+                    matrix.run {
+                        matrix.restore()
+                        matrix.openRoom(roomId)
+                        val bytes =
+                            withContext(Dispatchers.IO) {
+                                contentResolver.openInputStream(uri).use { input ->
+                                    requireNotNull(input)
+                                    val out = java.io.ByteArrayOutputStream()
+                                    val buffer = ByteArray(8192)
+                                    while (true) {
+                                        val n = input.read(buffer)
+                                        if (n < 0) break
+                                        require(out.size() + n <= 20 * 1024 * 1024) {
+                                            "Keep files under 20 MB."
+                                        }
+                                        out.write(buffer, 0, n)
+                                    }
+                                    out.toByteArray()
+                                }
+                            }
+                        matrix.sendFile(
+                            bytes,
+                            "Private attachment",
+                            contentResolver.getType(uri) ?: "application/octet-stream",
+                        )
+                    }
+                }
+        }
+
+    fun pickMatrixMedia(roomId: String) {
+        matrixAttachmentRoom = roomId
+        matrixPicker.launch(arrayOf("*/*"))
+    }
+
+    fun openMatrixMedia(source: org.matrix.rustcomponents.sdk.MediaSource, mime: String) {
+        matrix.run {
+            val bytes = matrix.download(source)
+            val file =
+                java.io.File(cacheDir, "shared/matrix-" + java.util.UUID.randomUUID()).apply {
+                    parentFile?.mkdirs()
+                    writeBytes(bytes)
+                }
+            bytes.fill(0)
+            withContext(Dispatchers.Main) {
+                if (unlocked.value) {
+                    val uri =
+                        androidx.core.content.FileProvider.getUriForFile(
+                            this@MainActivity,
+                            "$packageName.files",
+                            file,
+                        )
+                    startActivity(
+                        Intent(Intent.ACTION_VIEW)
+                            .setDataAndType(uri, mime)
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    )
+                } else file.delete()
+            }
+        }
+    }
+
     private val callPermissions =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
             val request = pendingCall
@@ -321,7 +392,12 @@ class MainActivity : FragmentActivity() {
             .onFailure { passwordError.value = "Could not remove password. Try again." }
     }
 
+    fun closeMatrix() {
+        scope.launch { matrix.pause() }
+    }
+
     fun lock() {
+        scope.launch { matrix.pause() }
         cancelPassword()
         unlocked.value = false
         timeout?.cancel()
